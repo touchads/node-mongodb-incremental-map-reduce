@@ -4,11 +4,12 @@
 	"version": "0.0.1",
 	"keywords" : ["mongodb", "mongo", "mapreduce", "incremental"],
 	"author": "Jacob Wright <jacwright@gmail.com>",
+	"homepage": "https://github.com/touchads/node-mongodb-incremental-map-reduce",
 	"repository" : {
 		"type" :  "git",
-        "url" :   "https://github.com/touchads/node-mongodb-incremental-map-reduce"
+        "url" :   "git://github.com/touchads/node-mongodb-incremental-map-reduce.git"
 	},
-	"dependencies": {
+	"implicit-dependencies": {
 		"mongodb": "0.9.4"
 	}
 }
