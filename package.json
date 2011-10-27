@@ -7,7 +7,7 @@
 	"homepage": "https://github.com/touchads/node-mongodb-incremental-map-reduce",
 	"repository" : {
 		"type" :  "git",
-        "url" :   "git://github.com/touchads/node-mongodb-incremental-map-reduce.git"
+        "url" :   "https://github.com/touchads/node-mongodb-incremental-map-reduce.git"
 	},
 	"implicit-dependencies": {
 		"mongodb": "0.9.4"

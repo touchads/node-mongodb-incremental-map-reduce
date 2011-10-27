@@ -8,7 +8,7 @@ Usage
 
 ### Installation
 
-Install node.js (http://nodejs.org) first, then npm (http://npmjs.org). mongodb-incremental-mapreduce relies on the [mongodb](https://github.com/christkv/node-mongodb-native) npm module. 
+Install node.js (http://nodejs.org) first, then npm (http://npmjs.org). mongodb-incremental-mapreduce relies on the [mongodb](https://github.com/christkv/node-mongodb-native) npm module. This has been tested with mongodb@0.9.4. 
 
 ```bash
 npm install mongodb
