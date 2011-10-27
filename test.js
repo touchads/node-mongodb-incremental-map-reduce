@@ -1,5 +1,5 @@
 var mongodb = require('mongodb');
-require('./index');
+var incremental = require('./index');
 
 var Db = mongodb.Db,
 	Connection = mongodb.Connection,
@@ -10,11 +10,38 @@ var host = process.env['MONGO_NODE_DRIVER_HOST'] != null ? process.env['MONGO_NO
 var port = process.env['MONGO_NODE_DRIVER_PORT'] != null ? process.env['MONGO_NODE_DRIVER_PORT'] : Connection.DEFAULT_PORT;
 
 
-var db = new Db('node-mongo-examples', new Server(host, port, {}), {native_parser:false});
+var db = new Db('node-mongo-examples', new Server(host, port, {}), {});
 
 console.log('opening', host, port);
 db.open(function(err, db) {
-	if (err) return console.error('open:', err.trace.stack);
+	
+//	incremental.mapReduce({ db: db, collections: 'log*' });
+//	
+//	return;
+	if (err) return console.error('open:', err);
+	
+	db.dropCollection('test', function(err, result) {
+		console.log("dropped test: ", result);
+	});
+	db.dropCollection('testResults', function(err, result) {
+		console.log("dropped testResults: ", result);
+	});
+	db.dropCollection('log101011', function(err, result) {
+		console.log("dropped log101011: ", result);
+	});
+	db.dropCollection('log101111', function(err, result) {
+		console.log("dropped log101111: ", result);
+	});
+	db.dropCollection('log101211', function(err, result) {
+		console.log("dropped log101211: ", result);
+	});
+	db.dropCollection('logs', function(err, result) {
+		console.log("dropped logs: ", result);
+	});
+	db.dropCollection('incmapreduce', function(err, result) {
+		console.log("dropped incmapreduce: ", result);
+	});
+	
 	
 	db.collection('test', function(err, collection) {
 		if (err) return console.error('collection test:', err.stack);
@@ -31,6 +58,11 @@ db.open(function(err, db) {
 				text: "The James"
 			},
 			{
+				username: "jones",
+				likes: 5,
+				text: "Second Comment"
+			},
+			{
 				username: "juju",
 				likes: 0,
 				text: "beans"
@@ -42,8 +74,13 @@ db.open(function(err, db) {
 			emit(this.username, { count: 1, likes: this.likes });
 		};
 		
-		var reduce = function reduce() {
-			
+		var reduce = function reduce(key, values) {
+			var totals = { count: 0, likes: 0 };
+			values.forEach(function(current) {
+				totals.count += current.count;
+				totals.likes += current.likes;
+			});
+			return totals;
 		};
 		
 		var options = {
@@ -53,17 +90,37 @@ db.open(function(err, db) {
 		};
 		
 		
-		
+		console.log('starting map reduce');
 		collection.mapReduce(map, reduce, options, function(err, results) {
-			if (err) return console.error('mapreduce:', err.stack);
+			if (err) return console.error('mapreduce:', err);
 			
-			console.log('done!');
-			console.log(results);
+			console.log('done with comments!');
 		});
 	});
 	
+	
 	db.collection('log101011', function(err, collection) {
-		if (err) return console.error('collection log101011:', err.stack);
+		if (err) return console.error('collection log101011:', err);
+		
+		var map = function map() {
+			this.tags.forEach(function(tag) {
+				emit(tag, 1);
+			});
+		};
+		
+		var reduce = function reduce(key, values) {
+			var sum = 0;
+			values.forEach(function(value) {
+				sum += value;
+			});
+			return sum;
+		};
+		
+		var options = {
+			out: {
+				incremental: 'logs'
+			}
+		};
 		
 		collection.insert([
 			{ tags: ['one', 'two', 'three'] },
@@ -72,7 +129,7 @@ db.open(function(err, db) {
 		]);
 		
 		db.collection('log101111', function(err, collection) {
-			if (err) return console.error('collection log101111:', err.stack);
+			if (err) return console.error('collection log101111:', err);
 			
 			collection.insert([
 				{ tags: ['one', 'four', 'eight'] },
@@ -80,48 +137,32 @@ db.open(function(err, db) {
 				{ tags: ['one', 'two', 'four'] }
 			]);
 			
-			db.collection('log101211', function(err, collection) {
-				if (err) return console.error('collection log 101211:', err.stack);
+			
+			incremental.mapReduce({ collections: 'log*', db: db }, map, reduce, options, function(err, results) {
+				if (err) return console.error('mapreduce-last:', err);
 				
+				console.log('done with 2 logs!');
 				
-				collection.insert([
-					{ tags: ['one', 'two', 'three'] },
-					{ tags: ['one', 'four', 'five'] },
-					{ tags: ['two', 'six', 'seven'] }
-				]);
-				
-				
-				
-				
-				var map = function map() {
-					this.tags.forEach(function(tag) {
-						emit(tag, 1);
-					});
-				};
-				
-				var reduce = function reduce(values) {
-					return values.reduce(function(a, b) {
-						return a + b;
-					});
-				};
-				
-				var options = {
-					out: {
-						incremental: 'logs',
-						interval: 10000
-					}
-				};
-				
-				
-				
-				collection.mapReduce(map, reduce, options, function(err, results) {
-					if (err) return console.error('mapreduce-last:', err.stack);
+				db.collection('log101211', function(err, collection) {
+					if (err) return console.error('collection log 101211:', err);
 					
-					console.log('done!');
-					console.log(results);
+					
+					collection.insert([
+						{ tags: ['one', 'two', 'three'] },
+						{ tags: ['one', 'four', 'five'] },
+						{ tags: ['two', 'six', 'seven'] }
+					]);
+					
+					
+					incremental.mapReduce({ collections: 'log*', db: db }, map, reduce, options, function(err, results) {
+						if (err) return console.error('mapreduce-last:', err);
+						
+						console.log('done with logs!');
+						db.close();
+					});
+					
+					
 				});
-				
-				
 			});
 		});
 	});

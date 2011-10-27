@@ -8,10 +8,7 @@
 		"type" :  "git",
         "url" :   "https://github.com/touchads/node-mongodb-incremental-map-reduce"
 	},
-	"engines": {
-		"node": ">= 0.4.0"
-	},
 	"dependencies": {
-		"mongodb": "0.9.2"
+		"mongodb": "0.9.4"
 	}
 }
