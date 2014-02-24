@@ -92,7 +92,7 @@ function runMapReduce(collection, map, reduce, options, callback) {
 			
 			if (meta) {
 //				console.log('Found META:', meta);
-				options.$query = query = { _id: { $gt: meta.lastId }};
+				options.query = query = { _id: { $gt: meta.lastId }};
 			}
 			
 			// get the max id at this point in time so we can reliably store the last id of the batch
