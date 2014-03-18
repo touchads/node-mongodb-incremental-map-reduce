@@ -126,7 +126,7 @@ function runMapReduce(collection, map, reduce, options, callback) {
 						if (callback) callback(err);
 						return;
 					}
-					saveMeta(meta, lastId, callback);
+					saveMeta(metaCollection, metaId, lastId, callback);
 				});
 			});
 		});
@@ -134,25 +134,25 @@ function runMapReduce(collection, map, reduce, options, callback) {
 }
 
 
-function saveMeta(meta, lastId, callback) {
-	metaCollection.update({
-		_id: metaId
-	}, {
-		$set: {
-			lastId: lastId
-		}
-	}, {
-		safe: true,
-		upsert: true
-	}, function(err) {
-		console.log(err);
-		if (err) {
-			console.warn(err.message);
-			saveMeta(meta, lastId, callback);
-		} else {
-			if (callback) callback(err, results);
-		}
-	});
+function saveMeta(metaCollection, metaId, lastId, callback) {
+        console.log(lastId);
+        metaCollection.update({
+                _id: metaId
+        }, {
+                $set: {
+                        lastId: lastId
+                }
+        }, {
+                safe: true,
+                upsert: true
+        }, function(err) {
+                if (err) {
+                        console.warn(err.message);
+                        saveMeta(metaCollection, metaId, lastId, callback);
+                } else {
+                        if (callback) callback(err);
+                }
+        });
 }
 
 function getName(collection) {
