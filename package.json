@@ -1,13 +1,13 @@
 {
 	"name": "mongodb-incremental-mapreduce",
-	"description": "Run incremental map/reduce queries for mongodb more easily",
-	"version": "0.0.1",
+	"description": "Run incremental map/reduce queries for mongodb",
+	"version": "0.0.2",
 	"keywords" : ["mongodb", "mongo", "mapreduce", "incremental"],
-	"author": "Jacob Wright <jacwright@gmail.com>",
-	"homepage": "https://github.com/touchads/node-mongodb-incremental-map-reduce",
+	"author": "Guillaume Buisson <guillaume.buisson@gmail.com>",
+	"homepage": "https://github.com/gbuisson/node-mongodb-incremental-map-reduce",
 	"repository" : {
 		"type" :  "git",
-        "url" :   "https://github.com/touchads/node-mongodb-incremental-map-reduce.git"
+        "url" :   "https://github.com/gbuisson/node-mongodb-incremental-map-reduce.git"
 	},
 	"implicit-dependencies": {
 		"mongodb": "0.9.4"
