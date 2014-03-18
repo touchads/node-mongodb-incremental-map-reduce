@@ -135,7 +135,6 @@ function runMapReduce(collection, map, reduce, options, callback) {
 
 
 function saveMeta(meta, lastId, callback) {
-	console.log(arguments);
 	metaCollection.update({
 		_id: metaId
 	}, {
@@ -149,7 +148,7 @@ function saveMeta(meta, lastId, callback) {
 		console.log(err);
 		if (err) {
 			console.warn(err.message);
-			saveMeta(meta);
+			saveMeta(meta, lastId, callback);
 		} else {
 			if (callback) callback(err, results);
 		}
