@@ -11,29 +11,29 @@ exports.mapReduce = function incMapReduce(collection, map, reduce, options, call
 	var isMatch = collection.collections;
 	if (!options) options = {};
 	else options = clone(options);
-	if ( !(isMatch instanceof RegExp))
+	if (!(isMatch instanceof RegExp))
 		isMatch = new RegExp('^' + RegExp.escape(isMatch).replace(/\\\*/g, '.*') + '$');
-	
+
 	if (options.out) {
 		var interval = options.out.interval;
 		delete options.out.interval;
 		var outCollection = options.out.interval || options.out.reduce || options.out.replace || options.out.merge;
 	}
-	
+
 	db.collectionNames(function(err, collectionNames) {
 		if (err) return callback(err);
-		
+
 		collectionNames = collectionNames.map(getName).filter(function(name) {
 			return (name != outCollection && isMatch.test(name));
 		});
-		
+
 		var count = 0;
 		collectionNames.forEach(function(collectionName) {
 			count++;
 			db.collection(collectionName, function(err, collection) {
-//				console.log('handling collection:', collectionName);
+				//				console.log('handling collection:', collectionName);
 				collection.mapReduce(map, reduce, options, function(err, results) {
-//					console.log('done with:', collectionName);
+					//					console.log('done with:', collectionName);
 					if (!--count) {
 						if (callback) callback(null, results);
 					}
@@ -41,11 +41,11 @@ exports.mapReduce = function incMapReduce(collection, map, reduce, options, call
 			});
 		});
 	});
-	
+
 	if (interval) {
 		return setInterval(function() {
 			exports.mapReduce(collection, map, reduce, options, callback);
-		}, interval*1000);
+		}, interval * 1000);
 	}
 };
 
@@ -53,88 +53,106 @@ exports.mapReduce = function incMapReduce(collection, map, reduce, options, call
 Collection.prototype.mapReduce = function incMapReduce(map, reduce, options, callback) {
 	if ('function' === typeof options) callback = options, options = {};
 	else options = clone(options);
-	
+
 	var collection = this;
 	var out = options.out;
 	if (!out || !out.incremental) {
 		return origMapReduce.call(collection, map, reduce, options, callback);
 	}
-	
+
 	// fix out
 	out.reduce = out.incremental;
-	
+
 	var interval = out.interval;
 	delete out.incremental;
 	delete out.interval;
-	
-	
+
+
 	runMapReduce(collection, map, reduce, options, callback);
-	
+
 	// run the mapreduce at a regular interval
 	if (interval) {
 		return setInterval(function() {
 			runMapReduce(collection, map, reduce, options, callback);
-		}, interval*1000);
+		}, interval * 1000);
 	}
 };
 
 function runMapReduce(collection, map, reduce, options, callback) {
-	
+
 	// pull the metadata if it exists for this collection
 	collection.db.collection('incmapreduce', function(err, metaCollection) {
-		
+
 		var metaId = collection.collectionName + ':' + options.out.reduce;
-//		console.log('metaId:', metaId);
-		
-		metaCollection.findOne({ _id: metaId }, function(err, meta) {
-			
+		//		console.log('metaId:', metaId);
+
+		metaCollection.findOne({
+			_id: metaId
+		}, function(err, meta) {
+
 			var query = {};
-			
+
 			if (meta) {
-//				console.log('Found META:', meta);
-				options.query = query = { _id: { $gt: meta.lastId }};
+				//				console.log('Found META:', meta);
+				options.query = query = {
+					_id: {
+						$gt: meta.lastId
+					}
+				};
 			}
-			
+
 			// get the max id at this point in time so we can reliably store the last id of the batch
-			var cursor = collection.find(query, {_id: 1});
-			cursor.sort({ _id: -1 });
-			
+			var cursor = collection.find(query, {
+				_id: 1
+			});
+			cursor.sort({
+				_id: -1
+			});
+
 			cursor.nextObject(function(err, doc) {
 				if (!doc) {
-//					console.log('NO MORE TO ADD AT THIS TIME');
+					//					console.log('NO MORE TO ADD AT THIS TIME');
 					if (callback) callback(null, null);
 					return;
 				}
-				
+
 				var lastId = doc._id;
 				var query = options.$query || (options.$query = {});
 				query.$lte = lastId;
-				
+
 				origMapReduce.call(collection, map, reduce, options, function(err, results) {
-					
+
 					if (err) {
 						if (callback) callback(err);
 						return;
 					}
-					
-//					console.log('success!!');
-					
-					if (meta) {
-						metaCollection.update({ _id: metaId }, { $set: { lastId: lastId } }, function(err) {
-							if (err) console.warn(err.message);
-//							else console.log('successfully updated', lastId);
-							if (callback) callback(err, results);
-						});
-					} else {
-						metaCollection.insert({ _id: metaId, lastId: lastId }, function(err) {
-							if (err) console.warn(err.message);
-//							else console.log('successfully inserted');
-							if (callback) callback(err, results);
-						});
-					}
+					saveMeta(meta, lastId, callback);
 				});
 			});
 		});
+	});
+}
+
+
+function saveMeta(meta, lastId, callback) {
+	console.log(arguments);
+	metaCollection.update({
+		_id: metaId
+	}, {
+		$set: {
+			lastId: lastId
+		}
+	}, {
+		safe: true,
+		upsert: true
+	}, function(err) {
+		console.log(err);
+		if (err) {
+			console.warn(err.message);
+			saveMeta(meta);
+		} else {
+			if (callback) callback(err, results);
+		}
 	});
 }
 
