@@ -79,7 +79,7 @@ Collection.prototype.mapReduce = function incMapReduce(map, reduce, options, cal
 };
 
 function runMapReduce(collection, map, reduce, options, callback) {
-
+	
 	// pull the metadata if it exists for this collection
 	collection.db.collection('incmapreduce', function(err, metaCollection) {
 
@@ -99,6 +99,8 @@ function runMapReduce(collection, map, reduce, options, callback) {
 						$gt: meta.lastId
 					}
 				};
+			} else {
+				options.query["_id"] = {};
 			}
 
 			// get the max id at this point in time so we can reliably store the last id of the batch
@@ -117,8 +119,7 @@ function runMapReduce(collection, map, reduce, options, callback) {
 				}
 
 				var lastId = doc._id;
-				var query = options.$query || (options.$query = {});
-				query.$lte = lastId;
+				options.query["_id"]["$lte"] = lastId;
 
 				origMapReduce.call(collection, map, reduce, options, function(err, results) {
 
@@ -135,24 +136,24 @@ function runMapReduce(collection, map, reduce, options, callback) {
 
 
 function saveMeta(metaCollection, metaId, lastId, callback) {
-        console.log(lastId);
-        metaCollection.update({
-                _id: metaId
-        }, {
-                $set: {
-                        lastId: lastId
-                }
-        }, {
-                safe: true,
-                upsert: true
-        }, function(err) {
-                if (err) {
-                        console.warn(err.message);
-                        saveMeta(metaCollection, metaId, lastId, callback);
-                } else {
-                        if (callback) callback(err);
-                }
-        });
+	console.log(lastId);
+	metaCollection.update({
+		_id: metaId
+	}, {
+		$set: {
+			lastId: lastId
+		}
+	}, {
+		safe: true,
+		upsert: true
+	}, function(err) {
+		if (err) {
+			console.warn(err.message);
+			saveMeta(metaCollection, metaId, lastId, callback);
+		} else {
+			if (callback) callback(err);
+		}
+	});
 }
 
 function getName(collection) {
