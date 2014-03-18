@@ -100,6 +100,7 @@ function runMapReduce(collection, map, reduce, options, callback) {
 					}
 				};
 			} else {
+				options.query = {};
 				options.query["_id"] = {};
 			}
 
