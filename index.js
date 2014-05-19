@@ -62,6 +62,7 @@ Collection.prototype.mapReduce = function incMapReduce(map, reduce, options, cal
 
 	// fix out
 	out.reduce = out.incremental;
+	out.nonAtomic = true;
 
 	var interval = out.interval;
 	delete out.incremental;
@@ -145,7 +146,6 @@ function saveMeta(metaCollection, metaId, lastId, callback) {
 			lastId: lastId
 		}
 	}, {
-		safe: true,
 		upsert: true
 	}, function(err) {
 		if (err) {
